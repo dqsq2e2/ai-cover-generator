@@ -1,0 +1,148 @@
+id: ai-cover-generator
+name: AI Cover Generator
+version: 1.0.0
+min_core_version: 1.4.8
+author: Ting Reader Team
+description:
+  zh: 使用书籍元数据和补充提示词生成封面，保存到书籍目录并写回封面地址。
+  en: Generate cover art from book metadata and optional prompts, save it beside the book, then apply the cover path.
+runtime: javascript
+license: MIT
+repo: dqsq2e2/ai-cover-generator
+entry_point: plugin.js
+capabilities:
+- id: cover.book_action
+  kind: ui_extension
+  invoke: openCoverPanel
+  slot: book.detail_action
+  title:
+    zh: AI 画封面
+    en: AI Cover
+  icon: image-plus
+  priority: 60
+  render:
+    mode: web_container
+    entry: ui/cover.html
+  contexts:
+  - book
+- id: cover.tools
+  kind: tool_provider
+  invoke: invokeTool
+  tools:
+  - name: cover.state
+    description: Load current book metadata and plugin configuration summary.
+  - name: cover.generate
+    description: Generate a cover image from book metadata and an optional user prompt.
+  - name: cover.apply
+    description: Save a generated cover image and apply it to the current book metadata.
+config_schema:
+  type: object
+  properties:
+    api_base_url:
+      type: string
+      title:
+        zh: GPT API 地址
+        en: GPT API endpoint
+      description:
+        zh: OpenAI 兼容图片生成接口。可填写服务根地址或完整 /v1/images/generations 地址。
+        en: OpenAI-compatible image generation endpoint. A service root or full /v1/images/generations URL is accepted.
+      default: https://api.zipimg.cn
+    api_key:
+      type: string
+      format: secret
+      x-encrypted: true
+      title:
+        zh: API 密钥
+        en: API key
+    model:
+      type: string
+      title:
+        zh: 模型
+        en: Model
+      default: gpt-image-2
+    size:
+      type: string
+      title:
+        zh: 图片尺寸
+        en: Image size
+      default: 1024x1024
+      enum:
+      - 1024x1024
+      - 2048x2048
+      - 4096x4096
+      - 768x1024
+      - 1536x2048
+      - 3072x4096
+      enum_labels:
+        1024x1024:
+          zh: 1:1 1K
+          en: 1:1 1K
+        2048x2048:
+          zh: 1:1 2K
+          en: 1:1 2K
+        4096x4096:
+          zh: 1:1 4K
+          en: 1:1 4K
+        768x1024:
+          zh: 3:4 1K
+          en: 3:4 1K
+        1536x2048:
+          zh: 3:4 2K
+          en: 3:4 2K
+        3072x4096:
+          zh: 3:4 4K
+          en: 3:4 4K
+    quality:
+      type: string
+      title:
+        zh: 生成质量
+        en: Quality
+      default: high
+      enum:
+      - standard
+      - high
+      enum_labels:
+        standard:
+          zh: 标准
+          en: Standard
+        high:
+          zh: 高质量
+          en: High
+    background:
+      type: string
+      title:
+        zh: 背景
+        en: Background
+      default: auto
+      enum:
+      - auto
+      - transparent
+      enum_labels:
+        auto:
+          zh: 自动
+          en: Auto
+        transparent:
+          zh: 透明
+          en: Transparent
+    request_timeout_seconds:
+      type: integer
+      title:
+        zh: 请求超时秒数
+        en: Request timeout seconds
+      description:
+        zh: 图片生成可能超过 30 秒，默认等待 180 秒。
+        en: Image generation can exceed 30 seconds. The default wait time is 180 seconds.
+      default: 180
+    style_prompt:
+      type: string
+      title:
+        zh: 默认风格提示词
+        en: Default style prompt
+      default: 有声书封面，专业出版物质感，书名大字排版清晰准确，电影感构图，高细节
+permissions:
+- type: books_read
+- type: file_write
+  value: "*"
+- type: database_write
+- type: network_access
+  value: "*"

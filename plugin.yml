@@ -1,6 +1,6 @@
 id: ai-cover-generator
 name: AI Cover Generator
-version: 1.0.1
+version: 1.0.2
 min_core_version: 1.5.0
 admin_only: true
 author: Ting Reader Team
@@ -142,6 +142,7 @@ config_schema:
       default: 有声书封面，专业出版物质感，书名大字排版清晰准确，电影感构图，高细节
 permissions:
 - type: books_read
+- type: user_settings_read
 - type: file_write
   value: "*"
 - type: database_write

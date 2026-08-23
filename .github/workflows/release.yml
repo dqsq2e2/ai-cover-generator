@@ -64,6 +64,9 @@ jobs:
       - name: Validate plugin
         run: ./trpack validate .
 
+      - name: Test plugin UI
+        run: node --test tests/cover-ui.test.mjs
+
       - name: Build package
         env:
           TRPACK_PRIVATE_KEY_JSON: ${{ secrets.TRPACK_PRIVATE_KEY_JSON }}

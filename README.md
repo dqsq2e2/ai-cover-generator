@@ -2,6 +2,10 @@
 
 使用当前书籍的元数据和用户补充提示词调用 OpenAI 兼容图片接口生成封面。
 
+## 安装
+
+从 GitHub Releases 下载与当前版本对应的 `.tr` 包，在 Ting Reader 插件管理页上传安装。插件 UI 已适配最新 Web Container Bridge，通过 manifest 白名单调用 `cover.tools` 和 `user_settings.get`。
+
 默认配置：
 
 - API 地址：`https://api.zipimg.cn`
@@ -20,3 +24,7 @@
 图片生成默认请求超时为 180 秒。需要宿主支持 `fetch` 的 `timeout_ms` 选项；旧宿主如果仍固定 30 秒超时，生成大图时可能提前失败。
 
 默认提示词会加入书名、作者、演播、类型、标签和简介等书籍元数据。封面会优先把清洗后的书名作为主标题，并把作者名、演播名和适合展示的短标签作为可见文字融入整体排版；简介用于理解内容和提炼画面，不会要求直接铺成大段文字。提示词会根据所选尺寸要求 1:1 方形或 3:4 竖版构图。由于图片模型生成文字仍可能出错，如遇到错字可调整补充提示词或重新生成。
+
+## 自动打包
+
+仓库内置 GitHub Actions：push / pull request 会校验 manifest、运行 UI 回归测试并构建 `.tr` artifact；推送 `v*` 标签会创建对应的 GitHub Release。

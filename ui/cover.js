@@ -2,8 +2,12 @@
   "use strict";
 
   var pending = new Map();
+  var bridgeToken = null;
   var currentBook = null;
+  var currentContext = {};
   var generated = null;
+  var receivedInit = false;
+  var stateLoadSequence = 0;
   var apiKeyRegisterUrl = "https://api.zipimg.cn/register?aff=LMPJPW5QCLPL";
   var language = "zh-CN";
 
@@ -115,6 +119,9 @@
   }
 
   function bridgeRequest(method, params) {
+    if (!bridgeToken) {
+      return Promise.reject(new Error(t("waiting")));
+    }
     var id = Date.now() + "-" + Math.random().toString(16).slice(2);
     return new Promise(function (resolve, reject) {
       var timer = window.setTimeout(function () {
@@ -125,7 +132,13 @@
         resolve: function (value) { window.clearTimeout(timer); resolve(value); },
         reject: function (error) { window.clearTimeout(timer); reject(error); }
       });
-      window.parent.postMessage({ type: "ting-plugin:request", id: id, method: method, params: params }, "*");
+      window.__TING_PLUGIN_BRIDGE__.postMessage({
+        type: "ting-plugin:request",
+        id: id,
+        method: method,
+        params: params,
+        bridge_token: bridgeToken
+      });
     });
   }
 
@@ -148,16 +161,24 @@
   }
 
   window.addEventListener("message", function (event) {
+    if (event.source !== window) return;
     var data = event.data;
     if (!data || typeof data !== "object") return;
     if (data.type === "ting-plugin:init") {
-      var context = data.context || {};
+      bridgeToken = data.bridgeToken || null;
+      currentContext = data.context || {};
+      currentBook = null;
+      generated = null;
+      els.preview.hidden = true;
+      els.image.src = "";
+      receivedInit = true;
+      stateLoadSequence += 1;
       loadLanguage().then(function () {
-        loadState({ context: context });
+        loadState();
       });
       return;
     }
-    if (data.type === "ting-plugin:response" && pending.has(data.id)) {
+    if (data.type === "ting-plugin:response" && data.bridge_token === bridgeToken && pending.has(data.id)) {
       var callbacks = pending.get(data.id);
       pending.delete(data.id);
       if (data.ok) callbacks.resolve(data.result);
@@ -178,8 +199,14 @@
   }
 
   function loadState(extra) {
+    var input = Object.assign({ context: currentContext }, extra || {});
+    if (!input.book_id && currentBook && currentBook.id) {
+      input.book_id = currentBook.id;
+    }
+    var sequence = ++stateLoadSequence;
     setStatus(t("loadingBook"));
-    invokeTool("cover.state", extra || {}).then(function (result) {
+    invokeTool("cover.state", input).then(function (result) {
+      if (sequence !== stateLoadSequence) return;
       currentBook = result.book || null;
       renderBook();
       if (result.configured) {
@@ -188,6 +215,7 @@
         setMissingApiKeyStatus();
       }
     }).catch(function (error) {
+      if (sequence !== stateLoadSequence) return;
       setStatus(error.message || String(error), true);
     });
   }
@@ -235,7 +263,7 @@
   els.apply.addEventListener("click", applyCover);
 
   window.setTimeout(function () {
-    if (!currentBook) {
+    if (!receivedInit && !currentBook) {
       applyLanguage(language);
       loadState();
     }

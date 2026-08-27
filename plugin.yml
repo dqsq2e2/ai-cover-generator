@@ -1,6 +1,6 @@
 id: ai-cover-generator
 name: AI Cover Generator
-version: 1.0.4
+version: 1.0.5
 min_core_version: 1.5.0
 admin_only: true
 author: Ting Reader Team

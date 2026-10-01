@@ -1,12 +1,13 @@
 id: ai-cover-generator
 name: AI Cover Generator
-version: 1.0.5
-min_core_version: 1.5.0
+version: 2.0.1
+min_core_version: 2.0.0
 admin_only: true
 author: Ting Reader Team
 description:
   zh: 使用书籍元数据和补充提示词生成封面，保存到书籍目录并写回封面地址。
-  en: Generate cover art from book metadata and optional prompts, save it beside the book, then apply the cover path.
+  en: Generate cover art from book metadata and optional prompts, save it beside the
+    book, then apply the cover path.
 runtime: javascript
 license: MIT
 repo: dqsq2e2/ai-cover-generator
@@ -14,8 +15,6 @@ entry_point: plugin.js
 capabilities:
 - id: cover.book_action
   kind: ui_extension
-  invoke: openCoverPanel
-  slot: book.detail_action
   title:
     zh: AI 画封面
     en: AI Cover
@@ -31,16 +30,36 @@ capabilities:
       - user_settings.get
   contexts:
   - book
+  slots:
+  - book.detail_action
 - id: cover.tools
   kind: tool_provider
-  invoke: invokeTool
   tools:
   - name: cover.state
-    description: Load current book metadata and plugin configuration summary.
+    description:
+      en: Load current book metadata and plugin configuration summary.
+    input_schema:
+      type: object
+    output_schema:
+      type: object
+    side_effects: false
   - name: cover.generate
-    description: Generate a cover image from book metadata and an optional user prompt.
+    description:
+      en: Generate a cover image from book metadata and an optional user prompt.
+    input_schema:
+      type: object
+    output_schema:
+      type: object
+    side_effects: true
   - name: cover.apply
-    description: Save a generated cover image and apply it to the current book metadata.
+    description:
+      en: Save a generated cover image and apply it to the current book metadata.
+    input_schema:
+      type: object
+    output_schema:
+      type: object
+    side_effects: true
+  invoke: invokeTool
 config_schema:
   type: object
   properties:
@@ -51,7 +70,8 @@ config_schema:
         en: GPT API endpoint
       description:
         zh: OpenAI 兼容图片生成接口。可填写服务根地址或完整 /v1/images/generations 地址。
-        en: OpenAI-compatible image generation endpoint. A service root or full /v1/images/generations URL is accepted.
+        en: OpenAI-compatible image generation endpoint. A service root or full /v1/images/generations
+          URL is accepted.
       default: https://api.zipimg.cn
     api_key:
       type: string
@@ -149,7 +169,7 @@ permissions:
 - type: books_read
 - type: user_settings_read
 - type: file_write
-  value: "*"
-- type: database_write
+  path: '*'
+- type: books_write
 - type: network_access
-  value: "*"
+  domain: '*'

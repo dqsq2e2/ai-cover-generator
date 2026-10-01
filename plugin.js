@@ -1,4 +1,5 @@
 "use strict";
+import { success, decodeBase64, createOutputFromBytes, resources } from "./sdk.mjs";
 
 const generatedImages = new Map();
 const MAX_GENERATED_IMAGES = 20;
@@ -22,8 +23,8 @@ async function openCoverPanel(params) {
 }
 
 async function invokeTool(params) {
-  const name = params?.name || params?.tool || "cover.state";
-  const input = params?.input || params?.params || {};
+  const name = params?.tool_name;
+  const input = params?.params || {};
 
   switch (name) {
     case "cover.state":
@@ -120,14 +121,19 @@ async function applyCover(params) {
     const imageBase64 = imageBase64FromParams(params, book.id);
     if (imageBase64) {
       const storage = await resolveCoverStorage(book);
-      const written = await hostInvoke("library.file.write", {
-        library_id: storage.libraryId,
-        book_id: book.id,
-        relative_to: "book",
-        path: storage.libraryPath,
-        data_base64: imageBase64,
-        overwrite: true,
-      });
+      const output = await createOutputFromBytes(decodeBase64(imageBase64), "image/png");
+      let written;
+      try {
+        written = await hostInvoke("assets.commit", {
+          library_id: storage.libraryId,
+          book_id: book.id,
+          relative_to: "book",
+          path: storage.libraryPath,
+          resource: output,
+        });
+      } finally {
+        await resources.close(output);
+      }
 
       const coverUrl = firstText(written?.path, storage.coverUrl);
       const updated = await updateBookCover(book.id, coverUrl);
@@ -160,9 +166,8 @@ async function applyCover(params) {
 }
 
 async function updateBookCover(bookId, coverUrl) {
-  const updated = await hostInvoke("database.update", {
-    entity: "book",
-    id: bookId,
+  const updated = await hostInvoke("books.update", {
+    book_id: bookId,
     patch: {
       cover_url: coverUrl,
     },
@@ -484,5 +489,10 @@ function stringValue(value, fallback) {
   return text || fallback;
 }
 
-globalThis.openCoverPanel = openCoverPanel;
-globalThis.invokeTool = invokeTool;
+export async function open(params) {
+  return success(await openCoverPanel(params));
+}
+export async function invokeToolSdk(params) {
+  return success(await invokeTool(params));
+}
+export { invokeToolSdk as invokeTool };

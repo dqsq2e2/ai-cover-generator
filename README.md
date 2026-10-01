@@ -15,11 +15,11 @@
 - 可配置参数：`size`、`quality`、`background`、`request_timeout_seconds`
 - 图片尺寸：支持 `1:1 1K/2K/4K` 和 `3:4 1K/2K/4K`
 
-插件入口位于书籍详情页动作区。生成结果如果包含 `url` 或 `b64_json`，会显示图片预览；点击“保存封面”时会优先把生成时临时缓存的 `b64_json` 图片通过 HostGateway `library.file.write` 以 `book_id` 为基准写入当前书籍目录的 `cover.png`，然后通过 `database.update` 把当前书籍的 `cover_url` 指向实际写入路径。
+插件入口位于书籍详情页动作区。生成结果如果包含 `url` 或 `b64_json`，会显示图片预览；点击“保存封面”时会优先把生成时临时缓存的 `b64_json` 图片分块写入 Host 暂存资源，通过 `assets.commit` 提交到当前书籍目录的 `cover.png`，然后通过 `books.update` 更新 `cover_url`。
 
 本地库会写成类似 `./storage/test2/222/cover.png` 的相对路径；WebDAV 等非本地库会沿用系统已有的 `temp/{book_hash}/cover.png` 临时目录路径。
 
-保存封面需要管理员上下文，并且插件需要 `file_write` 与 `database_write` 权限。当前写入书籍目录只支持有本地根目录的书库；如果图片接口只返回远程 `url`，插件会退回为直接写入该远程封面地址。
+保存封面需要管理员上下文，并且插件需要 `file_write` 与 `books_write` 权限。当前写入书籍目录只支持有本地根目录的书库；如果图片接口只返回远程 `url`，插件会退回为直接写入该远程封面地址。
 
 图片生成默认请求超时为 180 秒。需要宿主支持 `fetch` 的 `timeout_ms` 选项；旧宿主如果仍固定 30 秒超时，生成大图时可能提前失败。
 

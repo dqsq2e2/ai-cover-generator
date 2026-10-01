@@ -134,13 +134,13 @@ const createHarness = () => {
       return bridgeRequests.filter(
         (request) =>
           request.method === "capability.invoke" &&
-          request.params?.params?.name === "cover.state",
+          request.params?.params?.tool_name === "cover.state",
       );
     },
   };
 };
 
-const stateInput = (request) => request.params.params.input || {};
+const stateInput = (request) => request.params.params.params || {};
 
 const referencesBook = (request, bookId) => {
   const input = stateInput(request);

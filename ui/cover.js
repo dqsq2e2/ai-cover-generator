@@ -182,7 +182,9 @@
       var callbacks = pending.get(data.id);
       pending.delete(data.id);
       if (data.ok) callbacks.resolve(data.result);
-      else callbacks.reject(new Error(data.error || t("callFailed")));
+      else callbacks.reject((window.__TING_PLUGIN_BRIDGE__.createError
+        ? window.__TING_PLUGIN_BRIDGE__.createError(data.error, t("callFailed"))
+        : new Error(typeof data.error === "string" ? data.error : t("callFailed"))));
     }
   });
 

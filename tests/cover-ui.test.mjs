@@ -15,6 +15,7 @@ const settle = async () => {
 
 const createHarness = () => {
   const bridgeRequests = [];
+  const bridgeErrors = [];
   const elements = new Map();
   const windowListeners = new Map();
   const timers = new Map();
@@ -47,6 +48,14 @@ const createHarness = () => {
   const windowObject = {
     __TING_PLUGIN_BRIDGE_TOKEN__: "test-bridge-token",
     __TING_PLUGIN_BRIDGE__: {
+      createError(payload, fallback) {
+        const error = Object.assign(new Error(payload?.message || fallback), {
+          code: payload?.error, details: payload?.details,
+          trace_id: payload?.trace_id, status: payload?.status,
+        });
+        bridgeErrors.push(error);
+        return error;
+      },
       postMessage(message) {
         bridgeRequests.push(message);
       },
@@ -107,6 +116,7 @@ const createHarness = () => {
 
   return {
     bridgeRequests,
+    bridgeErrors,
     element,
     dispatchMessage,
     respond(request, result) {
@@ -139,6 +149,27 @@ const createHarness = () => {
     },
   };
 };
+
+test("structured bridge failures display their message and retain diagnostic metadata", async () => {
+  const harness = createHarness();
+  const request = await startWithBookContext(harness, { id: "book-1", title: "Test Book" });
+  harness.dispatchMessage({
+    type: "ting-plugin:response",
+    bridge_token: "test-bridge-token",
+    id: request.id,
+    ok: false,
+    error: {
+      error: "PermissionDenied", message: "Access denied",
+      details: { reason: "capability_denied", retryable: false },
+      trace_id: "trace-1", status: 403,
+    },
+  });
+  await settle();
+  assert.equal(harness.element("status").textContent, "Access denied");
+  assert.equal(harness.bridgeErrors[0].code, "PermissionDenied");
+  assert.equal(harness.bridgeErrors[0].trace_id, "trace-1");
+  assert.equal(harness.bridgeErrors[0].status, 403);
+});
 
 const stateInput = (request) => request.params.params.params || {};
 
